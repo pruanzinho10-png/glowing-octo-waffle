@@ -1,0 +1,77 @@
+name: build
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Build
+        shell: bash
+        run: |
+          if [[ -f visualenhancements/build.gradle ]]; then
+            project_dir="visualenhancements"
+          elif [[ -f build.gradle ]]; then
+            project_dir="."
+          else
+            echo "Não encontrei build.gradle na raiz nem em ./visualenhancements" >&2
+            exit 1
+          fi
+          echo "Compilando em: ${project_dir}"
+          cd "${project_dir}"
+          gradle build --console=plain
+
+      - name: Collect jar
+        shell: bash
+        run: |
+          if [[ -d visualenhancements/build/libs ]]; then
+            jar_dir="visualenhancements/build/libs"
+          elif [[ -d build/libs ]]; then
+            jar_dir="build/libs"
+          else
+            echo "Não encontrei a pasta build/libs" >&2
+            exit 1
+          fi
+
+          mkdir -p dist
+          find "${jar_dir}" -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' -exec cp {} dist/ \;
+          if ! compgen -G 'dist/*.jar' > /dev/null; then
+            echo "Nenhum JAR de mod foi gerado" >&2
+            exit 1
+          fi
+          ls -lh dist
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: visualenhancements-jar
+          path: dist/*.jar
+          if-no-files-found: error
+
+      - name: Publish release (somente em tags v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.jar
