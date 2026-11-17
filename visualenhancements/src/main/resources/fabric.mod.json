@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "visualenhancements",
+  "version": "${version}",
+  "name": "Visual Enhancements",
+  "description": "Client-side visual improvements and combat feedback for Minecraft 1.21.11",
+  "authors": ["SeniorDev"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.github.gamedev.visualenhancements.VisualEnhancementsClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
